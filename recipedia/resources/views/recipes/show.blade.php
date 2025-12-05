@@ -1,5 +1,4 @@
 <x-layouts.app>
-    <!-- Immersive Header -->
     <div class="relative h-[60vh] min-h-[500px] w-full bg-stone-900 overflow-hidden">
         @if($recipe->image_path)
             <img src="{{ $recipe->imageUrl }}" alt="{{ $recipe->title }}" class="w-full h-full object-cover opacity-60">
@@ -24,19 +23,74 @@
                             {{ $recipe->title }}
                         </h1>
                     </div>
-                    <!-- Actions -->
-                    <div class="flex items-center space-x-4 animate-fade-in-up" style="animation-delay: 0.1s">
+                    <div class="flex items-center space-x-4 animate-fade-in-up" style="animation-delay: 0.1s" 
+                         x-data="{ 
+                             liked: {{ $isLiked ? 'true' : 'false' }}, 
+                             count: {{ $likesCount }},
+                             loading: false,
+                             isAuthenticated: {{ auth()->check() ? 'true' : 'false' }},
+                             toggle() {
+                                 if (!this.isAuthenticated) {
+                                     window.location.href = '{{ route('login') }}';
+                                     return;
+                                 }
+                                 if (this.loading) return;
+                                 this.loading = true;
+                                 fetch('{{ route('recipes.like', $recipe) }}', {
+                                     method: 'POST',
+                                     headers: {
+                                         'Content-Type': 'application/json',
+                                         'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
+                                     }
+                                 })
+                                 .then(res => res.json())
+                                 .then(data => {
+                                     this.liked = data.liked;
+                                     this.count = data.likes_count;
+                                     this.loading = false;
+                                 })
+                                 .catch(err => {
+                                     console.error(err);
+                                     this.loading = false;
+                                 });
+                             }
+                         }">
+                        <a href="{{ route('recipes.pdf', $recipe) }}" class="flex items-center space-x-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all duration-300" title="Download PDF">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span class="font-bold">PDF</span>
+                        </a>
+                        <button 
+                            @click="toggle()"
+                            :class="liked ? 'bg-red-600 text-white shadow-lg shadow-red-600/30' : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20'"
+                            class="group flex items-center space-x-2 px-6 py-3 rounded-full transition-all duration-300"
+                            :title="isAuthenticated ? '' : 'Login untuk memberi like'"
+                        >
+                            <svg class="w-5 h-5 transition-transform group-hover:scale-110" :fill="liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                            <span class="font-bold" x-text="count"></span>
+                        </button>
                         @auth
-                            <button 
-                                onclick="toggleLike({{ $recipe->id }})"
-                                id="like-btn-{{ $recipe->id }}"
-                                class="group flex items-center space-x-2 px-6 py-3 rounded-full transition-all duration-300 {{ $isLiked ? 'bg-red-600 text-white shadow-lg shadow-red-600/30' : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20' }}"
-                            >
-                                <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="{{ $isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                                </svg>
-                                <span id="like-count-{{ $recipe->id }}" class="font-bold">{{ $likesCount }}</span>
-                            </div>
+                            @if(auth()->id() === $recipe->user_id)
+                                <a href="{{ route('recipes.edit', $recipe) }}" class="flex items-center space-x-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all duration-300" title="Edit Resep">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    <span class="font-bold">Edit</span>
+                                </a>
+                                <form action="{{ route('recipes.destroy', $recipe) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus resep ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="flex items-center space-x-2 px-6 py-3 rounded-full bg-red-600/80 backdrop-blur-md text-white hover:bg-red-600 transition-all duration-300 shadow-lg shadow-red-600/20" title="Hapus Resep">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                        <span class="font-bold">Hapus</span>
+                                    </button>
+                                </form>
+                            @endif
                         @endauth
                     </div>
                 </div>
@@ -45,14 +99,12 @@
     </div>
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-20">
         <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12">
-            <!-- Description -->
             <div class="mb-12 border-b border-stone-100 pb-12">
                 <p class="font-serif text-xl md:text-2xl text-stone-600 leading-relaxed italic text-center max-w-3xl mx-auto">
                     "{{ $recipe->description }}"
                 </p>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                <!-- Ingredients -->
                 <div class="lg:col-span-4">
                     <div class="bg-stone-50 rounded-2xl p-8 sticky top-24">
                         <h3 class="font-serif text-2xl font-bold text-stone-900 mb-6 flex items-center">
@@ -71,7 +123,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Instructions -->
                 <div class="lg:col-span-8">
                     <h3 class="font-serif text-2xl font-bold text-stone-900 mb-6 flex items-center">
                         <span class="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-sm mr-3">2</span>
@@ -85,7 +136,6 @@
                 </div>
             </div>
         </div>
-        <!-- Comments Section -->
         <div class="mt-12 max-w-3xl mx-auto">
             <h3 class="font-serif text-2xl font-bold text-stone-900 mb-8 text-center">Diskusi ({{ $recipe->comments->count() }})</h3>
             @auth
@@ -150,33 +200,5 @@
         </div>
     </div>
     @auth
-    <script>
-        function toggleLike(recipeId) {
-            const btn = document.getElementById(`like-btn-${recipeId}`);
-            const countSpan = document.getElementById(`like-count-${recipeId}`);
-            fetch(`/recipes/${recipeId}/like`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                countSpan.textContent = data.likes_count;
-                const svg = btn.querySelector('svg');
-                if (data.liked) {
-                    btn.classList.remove('bg-white/10', 'text-white', 'hover:bg-white/20');
-                    btn.classList.add('bg-red-600', 'text-white', 'shadow-lg', 'shadow-red-600/30');
-                    svg.setAttribute('fill', 'currentColor');
-                } else {
-                    btn.classList.remove('bg-red-600', 'shadow-lg', 'shadow-red-600/30');
-                    btn.classList.add('bg-white/10', 'text-white', 'hover:bg-white/20');
-                    svg.setAttribute('fill', 'none');
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-    </script>
     @endauth
 </x-layouts.app>

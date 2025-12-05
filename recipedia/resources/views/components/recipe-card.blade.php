@@ -46,7 +46,7 @@
                 </div>
                 <span class="text-xs font-medium text-stone-600">{{ $recipe->user->name }}</span>
             </div>
-            <span class="text-xs font-medium text-orange-600 group-hover:translate-x-1 transition-transform duration-300">Baca Selengkapnya &rarr;</span>
+            <a href="{{ route('recipes.show', $recipe) }}" class="text-xs font-medium text-orange-600 group-hover:translate-x-1 transition-transform duration-300 hover:text-orange-700">Baca Selengkapnya &rarr;</a>
         </div>
     </div>
     @auth

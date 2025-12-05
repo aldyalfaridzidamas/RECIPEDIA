@@ -21,7 +21,6 @@
     --color-primary-900: #7c2d12;
 }
 
-/* Custom Utilities */
 @layer utilities {
     .font-serif {
         font-family: var(--font-serif);

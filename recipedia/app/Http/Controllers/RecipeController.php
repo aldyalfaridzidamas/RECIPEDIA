@@ -96,7 +96,36 @@ class RecipeController extends Controller
             Storage::disk('public')->delete($recipe->image_path);
         }
         $recipe->delete();
-        return redirect()->back()
+        return redirect()->route('dashboard')
             ->with('success', 'Resep berhasil dihapus!');
+    }
+
+    public function downloadPdf(Recipe $recipe)
+    {
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('recipes.pdf', compact('recipe'));
+        return $pdf->download('resep-' . $recipe->id . '.pdf');
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $recipes = Recipe::where('title', 'like', "%{$query}%")
+            ->orWhere('description', 'like', "%{$query}%")
+            ->orWhere('ingredients', 'like', "%{$query}%")
+            ->limit(5)
+            ->get(['id', 'title', 'image_path']);
+
+        return response()->json($recipes->map(function ($recipe) {
+            return [
+                'id' => $recipe->id,
+                'title' => $recipe->title,
+                'image_url' => $recipe->image_path ? asset('storage/' . $recipe->image_path) : null,
+            ];
+        }));
     }
 }

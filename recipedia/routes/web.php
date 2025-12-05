@@ -29,3 +29,5 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 });
 Route::get('/recipes/{recipe}', [RecipeController::class, 'show'])->name('recipes.show');
+Route::get('/recipes/{recipe}/pdf', [RecipeController::class, 'downloadPdf'])->name('recipes.pdf');
+Route::get('/api/recipes/search', [RecipeController::class, 'search'])->name('recipes.search');
